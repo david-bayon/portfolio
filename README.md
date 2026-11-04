@@ -152,7 +152,7 @@ Suelta el archivo en `assets/archive/` y añade su texto y su posición en
    cual a la raíz del sitio.
 2. En los datos, usa la ruta **sin barra inicial**: `src: "work/mi-proyecto/foto.jpg"`.
    Con `/work/…` el sitio funcionaría en local, pero no en GitHub Pages, que lo sirve
-   desde una subcarpeta (`/WEBPROTOTIPE/`).
+   desde una subcarpeta (`/portfolio/`).
 
 **Nombres de archivo** (SEO): minúsculas, en inglés, sin espacios ni tildes, con la
 marca y lo que se ve: `vino-claro-bottle-mockup-red-wine-front.jpg`. Las miniaturas de
