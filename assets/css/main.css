@@ -761,8 +761,8 @@ html.light .nav__top__top__gallery__mode {
     display: none;
   }
 }
-/* móvil: la lista de proyectos es la portada (index.html). Al abrir un proyecto o
-   About se oculta y el contenido sube arriba. El único scroll es el de la página */
+/* móvil: la lista de proyectos es la portada (index.html) y se desplaza dentro del
+   rail. Al abrir un proyecto o About se oculta y el scroll es el de la página */
 @media (max-width: 656px) {
   .nav__top__bottom {
     margin-top: 8px;
@@ -773,7 +773,7 @@ html.light .nav__top__top__gallery__mode {
   body:not([data-page="home"]) .nav__cards {
     display: none;
   }
-  .nav {
+  body:not([data-page="home"]) .nav {
     max-height: none;
     overflow: visible;
   }
@@ -834,9 +834,13 @@ html.light .nav__top__top__gallery__mode {
 .nav__card__end {
   height: 40px;
 }
-/* en táctil las tarjetas no se animan al hacer scroll (ver initNavCardScroll) */
-html.device-touch .nav__card__inner {
-  will-change: auto;
+/* en táctil cada parte va en su capa: si no, cambiar la opacidad del degradado en
+   cada fotograma repinta la tarjeta con su SVG y la animación vibra */
+html.device-touch .nav__card__bg {
+  will-change: opacity;
+}
+html.device-touch .nav__card__design {
+  will-change: transform;
 }
 /* misma tipografía que el resto de la card Contact (hereda la del texto) */
 .about__contact__clock {
@@ -1448,6 +1452,14 @@ html.light .play-btn {
 .case__study__list .case__study__gallery__item.split {
   grid-column: span 1;
   grid-row: span 2;
+}
+/* móvil: las verticales, una debajo de otra */
+@media (max-width: 656px) {
+  .case__study__list .case__study__gallery__item.desktop-mobile.split,
+  .case__study__list .case__study__gallery__item.split {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
 }
 .case__study__list .case__study__gallery__item.split-rows {
   grid-column: span 1;

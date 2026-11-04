@@ -1128,7 +1128,9 @@ function updateNavActive() {
 }
 
 let navToken = 0;
+let navigated = false; // se ha cambiado de página sin recargar
 function spaNavigate(target, push) {
+  navigated = true;
   const url = new URL(target, location.href);
   const dest = url.pathname + url.search;
   if (push && dest === location.pathname + location.search) return;
@@ -1202,13 +1204,23 @@ function boot() {
   const langBtn = $(".nav__lang");
   if (langBtn) langBtn.addEventListener("click", () => setLang(lang === "es" ? "en" : "es"));
 
-  mountPage(pageFromPath(location.pathname));
-
-  /* al cambiar el ancho (girar el móvil) index.html pasa de la lista a About y al revés */
-  MOBILE.addEventListener("change", () => {
+  /* en móvil se entra por los trabajos, también abriendo about.html (Safari la
+     conserva en la pestaña y en sus sugerencias): About sólo se abre con su botón */
+  const entryPage = () => {
     const page = pageFromPath(location.pathname);
+    if (page !== "about" || !MOBILE.matches || navigated) return page;
+    history.replaceState({ spa: true }, "", "index.html");
+    return "home";
+  };
+  mountPage(entryPage());
+
+  /* al girar el móvil cambia el ancho, y Safari puede devolver la pestaña tal como estaba */
+  const syncEntry = () => {
+    const page = entryPage();
     if (page !== document.body.dataset.page) mountPage(page);
-  });
+  };
+  MOBILE.addEventListener("change", syncEntry);
+  addEventListener("pageshow", syncEntry);
 
   initVideos();
   initViewportFallback();
@@ -1224,9 +1236,6 @@ function boot() {
    ============================================================ */
 let navCardScrollUpdate = null;
 function initNavCardScroll() {
-  /* en táctil el scroll va en otro hilo: mover las tarjetas con JS siempre llega
-     tarde y vibran, así que ahí se desplazan solas, sin efecto */
-  if (TOUCH) return;
   const nav = $("#nav");
   if (!nav) return;
   const wrap = $("#nav-cards");
@@ -1234,59 +1243,80 @@ function initNavCardScroll() {
   const cards = $$(".nav__card", wrap);
   if (!cards.length) return;
 
+  /* las medidas se toman una vez y en cada fotograma sólo se lee nav.scrollTop:
+     medir mezclado con las escrituras recalcula la página entera y en móvil vibra */
+  const items = cards.map((card) => ({
+    inner: card.firstElementChild,
+    bg: card.querySelector(".nav__card__bg"),
+    top: 0, // respecto al inicio del scroll del rail
+    h: 0,
+    p: -1, // último progreso escrito (-1: ninguno)
+  }));
+  let START = 0, RANGE = 1, LIFT = 0, maxScroll = 0;
   let ticking = false;
 
-  const update = () => {
-    ticking = false;
-
+  /* false si la lista está oculta (móvil, fuera de la portada) */
+  const measure = () => {
+    if (!wrap.offsetHeight) return false;
     const H = nav.clientHeight;
-    const navTop = nav.getBoundingClientRect().top;
+    const origin = nav.getBoundingClientRect().top - nav.scrollTop;
     // paso entre tarjetas de proyecto (evita la tarjeta "About", de altura distinta)
     const stride =
       cards.length > 2
         ? cards[2].getBoundingClientRect().top - cards[1].getBoundingClientRect().top
         : 106;
-    const START = H - stride - 44; // empieza a encoger ~150px antes del borde inferior
-    const RANGE = stride * 2.5;
-    const LIFT = stride * 2;
+    START = H - stride - 44; // empieza a encoger ~150px antes del borde inferior
+    RANGE = stride * 2.5;
+    LIFT = stride * 2;
+    maxScroll = nav.scrollHeight - H;
+    items.forEach((it, i) => {
+      it.top = cards[i].getBoundingClientRect().top - origin;
+      it.h = it.inner?.offsetHeight || 0;
+      it.p = -1;
+    });
+    return true;
+  };
+
+  const update = () => {
+    ticking = false;
+    const y = Math.min(Math.max(nav.scrollTop, 0), maxScroll); // sin el rebote de iOS
 
     const geo = []; // bordes de cada tarjeta ya movida y encogida
-    for (const [i, card] of cards.entries()) {
-      const inner = card.firstElementChild;
-      if (!inner) continue;
-      const bg = inner.querySelector(".nav__card__bg");
-      const top = card.getBoundingClientRect().top - navTop;
+    items.forEach((it, i) => {
+      if (!it.inner) return;
+      const top = it.top - y;
       const p = Math.min(1, Math.max(0, (top - START) / RANGE));
-      const h = inner.offsetHeight;
       const s = 1 - 0.5 * p;
-      const bottom = top + h - LIFT * p; // transform-origin abajo: la escala no mueve el borde inferior
-      geo[i] = { top: bottom - h * s, bottom, s, stack: Math.min(1, p * 3) };
+      const bottom = top + it.h - LIFT * p; // transform-origin abajo: la escala no mueve el borde inferior
+      geo[i] = { top: bottom - it.h * s, bottom, s, stack: Math.min(1, p * 3) };
+      if (p === it.p) return; // sólo se escribe en las que cambian
+      it.p = p;
       if (p <= 0) {
-        inner.style.transform = "";
-        inner.style.opacity = "";
-        if (bg) bg.style.opacity = "";
-        inner.style.removeProperty("--stack");
+        it.inner.style.transform = "";
+        it.inner.style.opacity = "";
+        if (it.bg) it.bg.style.opacity = "";
+        it.inner.style.removeProperty("--stack");
       } else {
-        inner.style.transform = `translateY(${(-LIFT * p).toFixed(2)}px) scale(${(1 - 0.5 * p).toFixed(4)})`;
-        inner.style.opacity = Math.min(1, (1 - p) * 3.3).toFixed(3);
+        it.inner.style.transform = `translate3d(0, ${(-LIFT * p).toFixed(2)}px, 0) scale(${s.toFixed(4)})`;
+        it.inner.style.opacity = Math.min(1, (1 - p) * 3.3).toFixed(3);
         const stack = Math.min(1, p * 3).toFixed(3);
-        if (bg) bg.style.opacity = stack;
-        inner.style.setProperty("--stack", stack); // el mismo degradado bajo los logos en gris (.nav__card__mute)
+        if (it.bg) it.bg.style.opacity = stack;
+        if (!TOUCH) it.inner.style.setProperty("--stack", stack); // el mismo degradado bajo los logos en gris (.nav__card__mute)
       }
-    }
+    });
+    if (TOUCH) return; // la sombra se repinta en cada fotograma: sólo con ratón
     /* sombra sólo donde una tarjeta tapa a la de detrás: una franja en la de detrás
        justo bajo el borde de la de delante (--cover, en px de la propia tarjeta) */
-    cards.forEach((card, i) => {
-      const inner = card.firstElementChild;
+    items.forEach((it, i) => {
       const front = geo[i - 1], back = geo[i];
-      if (!inner || !back) return;
+      if (!it.inner || !back) return;
       const cover = front && back.stack ? (front.bottom - back.top) / back.s : 0;
       if (cover > 0) {
-        inner.style.setProperty("--shade", back.stack.toFixed(3));
-        inner.style.setProperty("--cover", `${cover.toFixed(2)}px`);
+        it.inner.style.setProperty("--shade", back.stack.toFixed(3));
+        it.inner.style.setProperty("--cover", `${cover.toFixed(2)}px`);
       } else {
-        inner.style.removeProperty("--shade");
-        inner.style.removeProperty("--cover");
+        it.inner.style.removeProperty("--shade");
+        it.inner.style.removeProperty("--cover");
       }
     });
   };
@@ -1297,10 +1327,13 @@ function initNavCardScroll() {
       requestAnimationFrame(update);
     }
   };
-  navCardScrollUpdate = kick;
-  addEventListener("resize", kick, { passive: true });
+  const refresh = () => {
+    if (measure()) kick();
+  };
+  navCardScrollUpdate = refresh;
+  addEventListener("resize", refresh, { passive: true });
   nav.addEventListener("scroll", kick, { passive: true });
-  update();
+  if (measure()) update();
 }
 
 /* aclara el fade de todas las <img class="preload"> del documento */
