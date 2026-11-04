@@ -1,0 +1,46 @@
+# ─── Secrets / environment ───────────────────────────────
+.env
+.env.*
+!.env.example
+*.local
+
+*.pem
+*.key
+secrets.json
+credentials.json
+
+# ─── Dependencies ────────────────────────────────────────
+node_modules/
+
+# ─── Build output ────────────────────────────────────────
+dist/
+.astro/
+.cache/
+.vite/
+
+# ─── Media originals (raw drop zone — NOT shipped) ───────
+# Ficheros fuente pesados (vídeo 4K, secuencias de frames, PSD…).
+# Solo las versiones optimizadas viven en public/work/ y se despliegan.
+media-src/
+
+# ─── Logs ────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ─── OS / editor cruft ───────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# Configuración local de herramientas
+.claude/
+
+# Session handoff (local baton, not history)
+handoff.md
+
+# CV personal (lleva teléfono y datos de contacto)
+cv/
