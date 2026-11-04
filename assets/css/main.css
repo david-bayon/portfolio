@@ -762,7 +762,7 @@ html.light .nav__top__top__gallery__mode {
   }
 }
 /* móvil: la lista de proyectos es la portada (index.html). Al abrir un proyecto o
-   About se oculta, el contenido sube arriba y el único scroll es el de la página */
+   About se oculta y el contenido sube arriba. El único scroll es el de la página */
 @media (max-width: 656px) {
   .nav__top__bottom {
     margin-top: 8px;
@@ -773,7 +773,7 @@ html.light .nav__top__top__gallery__mode {
   body:not([data-page="home"]) .nav__cards {
     display: none;
   }
-  body:not([data-page="home"]) .nav {
+  .nav {
     max-height: none;
     overflow: visible;
   }
@@ -833,6 +833,10 @@ html.light .nav__top__top__gallery__mode {
 }
 .nav__card__end {
   height: 40px;
+}
+/* en táctil las tarjetas no se animan al hacer scroll (ver initNavCardScroll) */
+html.device-touch .nav__card__inner {
+  will-change: auto;
 }
 /* misma tipografía que el resto de la card Contact (hereda la del texto) */
 .about__contact__clock {

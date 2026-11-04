@@ -12,7 +12,8 @@
     <script>
       (function () {
         var r = document.documentElement;
-        var m = localStorage.getItem("color-mode") || "light";
+        /* sin elección guardada se sigue el modo del dispositivo */
+        var m = localStorage.getItem("color-mode") || "system";
         if (m === "system")
           m = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
         r.classList.remove("dark", "light");

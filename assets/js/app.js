@@ -43,6 +43,7 @@ const isExternal = (p) => p.type === "external";
 /* móvil (mismo corte que main.css): el menú es una pantalla propia, la lista de
    proyectos de index.html; al abrir algo se oculta y queda "Ver menos" para volver */
 const MOBILE = matchMedia("(max-width: 656px)");
+const TOUCH = !matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 const ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 11" fill="none"><path fill="currentColor" d="M10.4 0v7.8H9.1V2.3L1.4 10l-1-1 7.8-7.7H2.6V0h7.8Z"/></svg>`;
 const DOWNLOAD_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="14.02" viewBox="0 0 11 14.02"><path fill="currentColor" d="M5.5,14.02L-.02,8.5l.92-.92,3.89,3.89V.58h1.41l-.07,10.96,3.96-3.96.92.92-5.52,5.52Z"/></svg>`;
@@ -84,13 +85,16 @@ function navHTML() {
    ============================================================ */
 function initTheme() {
   const root = document.documentElement;
-  const stored = localStorage.getItem("color-mode");
-  let mode = stored || "light";
-  if (mode === "system") {
-    mode = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-  }
-  apply(mode);
+  /* lo elegido con el interruptor manda; si no hay nada se sigue el modo del
+     dispositivo, también si cambia con la web abierta */
+  const system = matchMedia("(prefers-color-scheme: dark)");
+  const current = () => {
+    const mode = localStorage.getItem("color-mode") || "system";
+    return mode !== "system" ? mode : system.matches ? "dark" : "light";
+  };
+  apply(current());
   root.classList.add("visible");
+  system.addEventListener("change", () => apply(current()));
 
   function apply(m) {
     root.classList.remove("dark", "light");
@@ -108,8 +112,7 @@ function initTheme() {
    Device class (hover disponible o táctil)
    ============================================================ */
 function initDeviceClass() {
-  const mouse = matchMedia("(hover: hover) and (pointer: fine)").matches;
-  document.documentElement.classList.add(mouse ? "device-mouse" : "device-touch");
+  document.documentElement.classList.add(TOUCH ? "device-touch" : "device-mouse");
 }
 
 /* ============================================================
@@ -190,7 +193,7 @@ async function muteRaster(n, bg) {
 /* los diseños SVG se pintan en línea, en color y en gris, con el mismo encuadre:
    con <img>, Safari ignora object-fit en un SVG sin ancho/alto y las dos capas
    no coincidían */
-async function cardSVG(src, ns, keep = []) {
+async function cardSVG(src, ns, keep = [], withGray = true) {
   const raw = await (await fetch(src)).text();
   /* ids con prefijo: varios SVG en línea en la misma página no deben pisarse
      (comillas ' o ": al hacer el build, Vite incrusta los SVG pequeños con ') */
@@ -210,6 +213,7 @@ async function cardSVG(src, ns, keep = []) {
     return document.adoptNode(s);
   };
   const color = scope(parse(`${ns}c`));
+  if (!withGray) return { color };
   const svg = parse(`${ns}g`);
 
   /* colores por clase, como los exporta Illustrator (<style> .cls-N { fill… }) */
@@ -279,10 +283,11 @@ function mountNav() {
   PROJECTS.forEach((p, i) => {
     const file = cardFile(p);
     const design = file && el("div", { class: "nav__card__design" }, file.svg ? null : cardDesign(file, i < 8));
-    const mute = file?.svg ? el("div", { class: "nav__card__mute" }) : null;
-    if (mute)
-      cardSVG(file.src, `c${i}`, p.cardKeep)
-        .then(({ color, gray }) => { design.append(color); mute.append(gray); })
+    /* la versión en gris sólo se ve al pasar el ratón: en táctil no se construye */
+    const mute = file?.svg && !TOUCH ? el("div", { class: "nav__card__mute" }) : null;
+    if (file?.svg)
+      cardSVG(file.src, `c${i}`, p.cardKeep, !!mute)
+        .then(({ color, gray }) => { design.append(color); mute?.append(gray); })
         .catch(() => design.append(cardDesign(file, i < 8))); // si no se puede leer, como imagen
     const card = el("div", { class: "nav__card" + (design ? " has-design" : "") + (mute ? " has-mute" : ""), style: `z-index:${PROJECTS.length - i}` },
       el("a",
@@ -438,7 +443,7 @@ function videoNode({ src, ratio, autoplay = true, button = false, loop = true, p
 }
 
 function frameLoopNode({ frames, ratio, intervalMs = 500 }) {
-  const image = el("img", { src: img(frames[0], 748), alt: "", loading: "lazy", class: "preload", style: `aspect-ratio:${ratio || "3 / 2"}` });
+  const image = el("img", { src: img(frames[0], 748), alt: "", loading: "lazy", decoding: "async", class: "preload", style: `aspect-ratio:${ratio || "3 / 2"}` });
   let i = 0;
   const t = setInterval(() => {
     i = (i + 1) % frames.length;
@@ -668,7 +673,7 @@ function renderAll() {
       lightboxItems.push({ type: "video", src: a.src });
     } else {
       lightboxItems.push(a.images ? { type: "group", images: a.images, sizes: a.sizes } : { type: "image", src: a.src });
-      media = el("img", { src: a.src, alt: title, loading: "lazy", class: "preload" });
+      media = el("img", { src: a.src, alt: title, loading: "lazy", decoding: "async", class: "preload" });
     }
     const activate = () => lightbox?.open(start);
     return el("div", {
@@ -955,7 +960,7 @@ function renderProject() {
       section.append(frameLoopNode({ frames: s.media.frames, ratio: s.ratio, intervalMs: s.media.intervalMs }));
       galleryItems.push({ type: "image", src: s.media.frames[0] });
     } else {
-      section.append(el("img", { src: img(s.media.src, 748), alt: "", loading: "lazy", class: "preload", ...(s.position ? { style: `object-position:${s.position}` } : {}) }));
+      section.append(el("img", { src: img(s.media.src, 748), alt: "", loading: "lazy", decoding: "async", class: "preload", ...(s.position ? { style: `object-position:${s.position}` } : {}) }));
       galleryItems.push({ type: "image", src: s.media.src });
     }
     if (!s.button && s.media.type !== "frames" && s.media.type !== "iframe") {
@@ -1197,11 +1202,12 @@ function boot() {
   const langBtn = $(".nav__lang");
   if (langBtn) langBtn.addEventListener("click", () => setLang(lang === "es" ? "en" : "es"));
 
-  mountPage(document.body.dataset.page || pageFromPath(location.pathname));
+  mountPage(pageFromPath(location.pathname));
 
-  /* al pasar de móvil a escritorio (girar, redimensionar) la portada móvil no existe */
+  /* al cambiar el ancho (girar el móvil) index.html pasa de la lista a About y al revés */
   MOBILE.addEventListener("change", () => {
-    if (!MOBILE.matches && document.body.dataset.page === "home") location.replace("about.html");
+    const page = pageFromPath(location.pathname);
+    if (page !== document.body.dataset.page) mountPage(page);
   });
 
   initVideos();
@@ -1218,6 +1224,9 @@ function boot() {
    ============================================================ */
 let navCardScrollUpdate = null;
 function initNavCardScroll() {
+  /* en táctil el scroll va en otro hilo: mover las tarjetas con JS siempre llega
+     tarde y vibran, así que ahí se desplazan solas, sin efecto */
+  if (TOUCH) return;
   const nav = $("#nav");
   if (!nav) return;
   const wrap = $("#nav-cards");

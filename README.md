@@ -32,7 +32,7 @@ subiéndolo a cualquier hosting estático (Netlify, GitHub Pages, un subdirector
 ## Estructura
 
 ```
-index.html          Móvil: portada con la lista de proyectos. Escritorio: redirige a about.html
+index.html          Móvil: portada con la lista de proyectos. Escritorio: muestra About
 all.html            Archivo: piezas sueltas en columnas
 about.html          About  ← página de entrada (logo y ✕ de /all llevan aquí)
 project.html        Plantilla única de caso de estudio → project.html?p=<slug>
@@ -66,7 +66,7 @@ cada una se distingue por el atributo `data-page` de su `<body>`.
 
 En móvil (hasta 656 px) el menú es una pantalla propia: la lista de proyectos de
 `index.html`. Al abrir un proyecto o About se oculta y queda «Ver menos» para volver.
-En escritorio `index.html` redirige a `about.html` y el menú se queda fijo a la izquierda.
+En escritorio `index.html` muestra About y el menú se queda fijo a la izquierda.
 
 ---
 
@@ -175,5 +175,6 @@ en `public/font/` y descomenta los bloques `@font-face` de `assets/css/fonts.css
 ## Temas (claro / oscuro)
 
 El botón del nav alterna la clase `dark` / `light` en `<html>` y guarda la
-preferencia en `localStorage["color-mode"]`. Un script en el `<head>` de cada página
-la aplica antes de pintar para evitar el parpadeo. Los colores se definen como variables CSS en `assets/css/main.css`.
+preferencia en `localStorage["color-mode"]`. Sin preferencia guardada se sigue el
+modo claro u oscuro del dispositivo, también si cambia con la web abierta.
+Un script en el `<head>` de cada página lo aplica antes de pintar para evitar el parpadeo. Los colores se definen como variables CSS en `assets/css/main.css`.
