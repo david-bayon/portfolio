@@ -948,6 +948,8 @@ function renderProject() {
   };
 
   const addMedia = (s) => {
+    /* la pieza interactiva necesita la cámara y en los móviles no funciona: ni se carga */
+    if (s.media.type === "iframe" && TOUCH) return;
     const layout = s.layout || "";
     const item = el("div", { class: `case__study__gallery__item ${layout}`.trim(), "data-reveal": "" });
     const inner = el("div", { class: "case__study__gallery__item__inner", "data-aspect-ratio": s.ratio });
