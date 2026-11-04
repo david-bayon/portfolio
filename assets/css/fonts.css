@@ -1,0 +1,40 @@
+/* ============================================================
+   Tipografías
+   ------------------------------------------------------------
+   El sitio usa "SF Pro Text" y "SF Pro Display" (Apple).
+   No podemos redistribuir esos ficheros, así que:
+
+   1) Si tienes los .woff2 de SF Pro, colócalos en public/font/ con
+      estos nombres y descomenta los @font-face de abajo:
+         SFProText-Regular.woff2
+         SFProDisplay-Regular.woff2
+   2) Si no, se usa el "system-ui" del sistema. En macOS eso ES
+      San Francisco, así que se ve prácticamente igual.
+   ============================================================ */
+
+/*
+@font-face {
+  font-family: "sf-pro-text";
+  src: url("font/SFProText-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "sf-pro-display";
+  src: url("font/SFProDisplay-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+*/
+
+/* Fallback: mapea esos nombres a la pila del sistema.
+   Si activas los @font-face de arriba, estos alias siguen funcionando
+   como respaldo. */
+:root {
+  --font-text:
+    "sf-pro-text", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
+  --font-display:
+    "sf-pro-display", -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
