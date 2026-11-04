@@ -78,18 +78,49 @@ function setup() {
 }
 
 let cameraStarted = false;
+let cameraError = "";
+
+/* Safari y todo iOS, donde todos los navegadores son WebKit */
+function isWebKit() {
+  const ua = navigator.userAgent;
+  return /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg|OPR|Android/.test(ua);
+}
 
 function startCamera() {
   if (cameraStarted) return;
   cameraStarted = true;
 
+  /* p5 y ml5 sólo avisan por consola: hay que saberlo para decírselo al visitante */
+  const report = (e) => {
+    cameraError ||= String(e.reason?.message || e.reason || e.message || "Error");
+  };
+  addEventListener("unhandledrejection", report);
+  addEventListener("error", report);
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraError = "NotSupportedError";
+    return;
+  }
+  const askCamera = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+  navigator.mediaDevices.getUserMedia = (constraints) =>
+    askCamera(constraints).catch((e) => {
+      cameraError = e.name || "Error";
+      throw e;
+    });
+
   video = createCapture(VIDEO, { flipped: true });
   video.size(640, 480);
-  video.hide();
+  /* iOS deja de enviar la cámara a un vídeo oculto o tapado (WebKit bug 206843):
+     en vez de hide() se queda pintado, casi invisible y encima del lienzo */
+  video.elt.style.cssText +=
+    ";position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;z-index:1;pointer-events:none";
+
+  /* el runtime de MediaPipe da problemas en WebKit: ahí, tfjs con WebGL */
+  const webkit = isWebKit();
+  if (webkit) ml5.setBackend?.("webgl");
 
   handPose = ml5.handPose(
     {
-      runtime: "mediapipe",
+      runtime: webkit ? "tfjs" : "mediapipe",
       modelType: "full",
       maxHands: 2,
       flipped: true,
@@ -119,7 +150,43 @@ function draw() {
 
   if (introVisible) {
     drawIntroPopup();
+  } else if (cameraError) {
+    drawCameraError();
   }
+}
+
+/* mismo idioma que la web (assets/js/i18n.js): el elegido con las banderas o el del navegador */
+function siteIsSpanish() {
+  let siteLang = navigator.language || "";
+  try { siteLang = localStorage.getItem("lang") || siteLang; } catch (e) { /* almacenamiento bloqueado */ }
+  return siteLang.toLowerCase().startsWith("es");
+}
+
+function drawCameraError() {
+  const es = siteIsSpanish();
+  const line1 = es ? "No se ha podido abrir la cámara" : "The camera could not be opened";
+  const line2 = cameraError === "NotAllowedError"
+    ? (es ? "Permite el acceso y recarga la página" : "Allow access and reload the page")
+    : cameraError.slice(0, 40);
+
+  push();
+  noStroke();
+  textFont(topFont);
+  textStyle(NORMAL);
+  textAlign(CENTER, CENTER);
+  const size = constrain(min(width, height) * 0.017, 14, 22);
+  const lineGap = size * 1.4;
+  textSize(size);
+
+  const boxW = min(max(textWidth(line1), textWidth(line2)) + 42, width - 16);
+  const boxH = lineGap * 2 + 28;
+  fill(...CONFIG.popupBox);
+  rect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 22);
+
+  fill(...CONFIG.popupText);
+  text(line1, width / 2, height / 2 - lineGap * 0.5);
+  text(line2, width / 2, height / 2 + lineGap * 0.5);
+  pop();
 }
 
 function buildFloatingLetters() {
@@ -262,10 +329,7 @@ function drawIntroPopup() {
   rect(0, 0, width, height);
 
   // message
-  // mismo idioma que la web (assets/js/i18n.js): el elegido con las banderas o el del navegador
-  let siteLang = navigator.language || "";
-  try { siteLang = localStorage.getItem("lang") || siteLang; } catch (e) { /* almacenamiento bloqueado */ }
-  const isSpanish = siteLang.toLowerCase().startsWith("es");
+  const isSpanish = siteIsSpanish();
   const line1 = isSpanish ? "Interactúa con las letras" : "Interact with the letters";
   const line2 = isSpanish ? "con los dedos" : "with your fingers";
 
