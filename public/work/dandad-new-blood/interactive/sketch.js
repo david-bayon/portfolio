@@ -261,21 +261,6 @@ function drawIntroPopup() {
   fill(0, 0, 0, 18);
   rect(0, 0, width, height);
 
-  const boxW = min(width * 0.5, 560);
-  const boxH = min(height * 0.19, 170);
-  const boxX = width / 2 - boxW / 2;
-  const boxY = height / 2 - boxH / 2;
-
-  fill(...CONFIG.popupBox);
-  rect(boxX, boxY, boxW, boxH, 22);
-
-  // button
-  okButton.w = 80;
-  okButton.h = 34;
-  const bottomMargin = 16;
-  okButton.x = width / 2 - okButton.w / 2;
-  okButton.y = boxY + boxH - okButton.h - bottomMargin;
-
   // message
   // mismo idioma que la web (assets/js/i18n.js): el elegido con las banderas o el del navegador
   let siteLang = navigator.language || "";
@@ -287,14 +272,35 @@ function drawIntroPopup() {
   textFont(topFont);
   textStyle(NORMAL);
   textAlign(CENTER, CENTER);
-  fill(...CONFIG.popupText);
 
   let msgSize = min(width, height) * 0.017;
   msgSize = constrain(msgSize, 14, 22);
   textSize(msgSize);
-
   const lineGap = msgSize * 1.15;
-  const textCenterY = boxY + boxH * 0.26;
+
+  // button
+  okButton.w = 80;
+  okButton.h = 34;
+  const bottomMargin = 16;
+
+  // la caja nunca es más pequeña que su contenido: en móvil el lienzo es bajo
+  const pad = 14;
+  const gap = 10;
+  const minW = max(textWidth(line1), textWidth(line2)) + pad * 3;
+  const minH = pad + lineGap * 2 + gap + okButton.h + bottomMargin;
+  const boxW = min(max(min(width * 0.5, 560), minW), width - 16);
+  const boxH = max(min(height * 0.19, 170), minH);
+  const boxX = width / 2 - boxW / 2;
+  const boxY = height / 2 - boxH / 2;
+
+  fill(...CONFIG.popupBox);
+  rect(boxX, boxY, boxW, boxH, 22);
+
+  okButton.x = width / 2 - okButton.w / 2;
+  okButton.y = boxY + boxH - okButton.h - bottomMargin;
+
+  fill(...CONFIG.popupText);
+  const textCenterY = max(boxY + boxH * 0.26, boxY + pad + lineGap);
 
   text(line1, width / 2, textCenterY - lineGap * 0.5);
   text(line2, width / 2, textCenterY + lineGap * 0.5);
