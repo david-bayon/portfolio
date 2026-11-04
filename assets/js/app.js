@@ -531,6 +531,11 @@ function initLightbox(items, { navClose = false, mediaClose = false } = {}) {
   });
   const box = el("div", { class: "lightbox" + (multi ? " has-cursor" : "") }, navRight ? null : closeBtn, multi ? cursor : null, stage);
   navRight?.append(closeBtn);
+  /* proyectos en móvil: esta X ocupa el sitio de "Ver menos" (ver main.css) */
+  const backClose = mediaClose
+    ? el("button", { class: "nav__top__bottom__close", type: "button", "aria-label": ui("close"), html: CLOSE_ICON, onclick: close })
+    : null;
+  if (backClose) $(".nav__top__bottom")?.append(backClose);
   document.body.append(box);
 
   /* proyectos: la X va sobre la propia foto o vídeo, arriba a la derecha */
@@ -633,6 +638,7 @@ function initLightbox(items, { navClose = false, mediaClose = false } = {}) {
     document.documentElement.removeEventListener("mouseleave", onLeave);
     box.remove();
     closeBtn?.remove();
+    backClose?.remove();
     document.body.style.overflow = "";
     document.body.classList.remove("lightbox-open");
     navRight?.classList.remove("has-gallery");

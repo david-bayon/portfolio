@@ -2470,7 +2470,8 @@ body[data-page="all"].lightbox-open .nav:before {
 /* proyecto: igual, pero el nav va en su columna con las tarjetas → sólo los
    botones de arriba salen encima, fijos arriba (también en móvil, donde el
    nav se ha ido con el scroll); las tarjetas se esconden sin mover nada.
-   La X no va aquí sino sobre la propia foto o vídeo (.lightbox__media) */
+   La X va sobre la propia foto o vídeo (.lightbox__media), salvo en móvil,
+   donde sustituye a "Ver menos" (.nav__top__bottom__close) */
 body[data-page="project"].lightbox-open .nav {
   pointer-events: none;
   z-index: 101;
@@ -2489,6 +2490,32 @@ body[data-page="project"].lightbox-open .nav__cards {
 @media (max-width: 656px) {
   body[data-page="project"].lightbox-open .nav__top {
     right: var(--pd2);
+  }
+}
+.nav__top__bottom__close {
+  align-items: center;
+  background-color: var(--color-gray10);
+  border: 0;
+  border-radius: 50%;
+  color: var(--color-white);
+  cursor: pointer;
+  display: none;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  width: 40px;
+}
+.nav__top__bottom__close svg {
+  height: 22.5px;
+  width: 22.5px;
+}
+@media (max-width: 656px) {
+  body[data-page="project"].lightbox-open .nav__top__bottom .page__button,
+  body[data-page="project"].lightbox-open .lightbox__media__close {
+    display: none;
+  }
+  body[data-page="project"].lightbox-open .nav__top__bottom__close {
+    display: flex;
   }
 }
 .nav__lightbox__close {
