@@ -888,66 +888,6 @@ function renderProject() {
   /* galería para el lightbox */
   const galleryItems = [];
 
-  /* ---- secuencias de fotogramas ligadas al scroll (scrub) ----
-     media: { type:"frames", dir:"/…/frames/", first, last, step, pad,
-              anchor,           // fotograma que se muestra…
-              anchorAt,         // …cuando el progreso por la ventana = este valor (0 entra · 0.5 centrado · 1 sale)
-              pxPerFrame }      // píxeles de scroll que avanzan 1 fotograma ("velocidad del scroll") */
-  const frameScrubbers = [];
-  const mountFrameScrub = (section, m) => {
-    const pad = m.pad || 4;
-    const first = m.first ?? 0;
-    const last = m.last ?? 0;
-    const step = m.step || 1;
-    const anchor = m.anchor ?? Math.round((first + last) / 2);
-    const anchorAt = m.anchorAt ?? 0.5;
-    const pxPerFrame = m.pxPerFrame || 4;
-    const ext = m.ext || ".jpg";
-    const url = (n) => `${m.dir}frame-${String(n).padStart(pad, "0")}${ext}`;
-    const snap = (n) => {
-      n = Math.max(first, Math.min(last, Math.round(n)));
-      return first + Math.round((n - first) / step) * step;
-    };
-    /* fetchpriority:"high" en el <img> visible para que el navegador no lo
-       deje esperando detrás de la cola de precarga (eso es lo que provoca
-       el parpadeo al scrollear rápido: el frame que hace falta AHORA se
-       queda en cola tras cientos de peticiones de fondo) */
-    const image = el("img", { src: url(snap(anchor)), alt: "", decoding: "async", fetchpriority: "high" });
-    section.append(image);
-
-    /* precarga en cola con concurrencia limitada (no las ~300 peticiones de
-       golpe) y prioridad baja, para no competir con el frame en pantalla */
-    const idle = window.requestIdleCallback || ((f) => setTimeout(f, 500));
-    idle(() => {
-      const pending = [];
-      for (let n = first; n <= last; n += step) pending.push(n);
-      const MAX_CONCURRENT = 4;
-      let active = 0;
-      const pump = () => {
-        while (active < MAX_CONCURRENT && pending.length) {
-          const n = pending.shift();
-          active++;
-          const pre = new Image();
-          pre.fetchPriority = "low";
-          pre.onload = pre.onerror = () => { active--; pump(); };
-          pre.src = url(n);
-        }
-      };
-      pump();
-    });
-
-    let cur = -1;
-    frameScrubbers.push(() => {
-      const r = section.getBoundingClientRect();
-      const vh = innerHeight || document.documentElement.clientHeight;
-      const W = r.height + vh;
-      if (W <= 0) return;
-      const p = (vh - r.top) / W;               // 0 = entrando por abajo · 1 = saliendo por arriba
-      const n = snap(anchor + (p - anchorAt) * (W / pxPerFrame));
-      if (n !== cur) { cur = n; image.src = url(n); }
-    });
-  };
-
   const addMedia = (s) => {
     /* la pieza interactiva necesita la cámara y en los móviles no funciona: ni se carga */
     if (s.media.type === "iframe" && TOUCH) return;
@@ -961,8 +901,6 @@ function renderProject() {
       section.append(videoNode({ src: s.media.src, ratio: s.ratio, autoplay: !s.button, button: !!s.button, loop: s.loop !== false, position: s.position,
         onExpand: (time) => lb && lb.open(mediaIndex, time) }));
       galleryItems.push({ type: "video", src: s.media.src, loop: s.loop !== false });
-    } else if (s.media.type === "frames") {
-      mountFrameScrub(section, s.media);
     } else if (s.media.type === "iframe") {
       section.append(iframeNode({ src: s.media.src }));
     } else if (s.media.type === "frameloop") {
@@ -972,7 +910,7 @@ function renderProject() {
       section.append(el("img", { src: web(s.media.src), alt: "", loading: "lazy", decoding: "async", class: "preload", ...(s.position ? { style: `object-position:${s.position}` } : {}) }));
       galleryItems.push({ type: "image", src: s.media.src });
     }
-    if (!s.button && s.media.type !== "frames" && s.media.type !== "iframe") {
+    if (!s.button && s.media.type !== "iframe") {
       section.style.cursor = "pointer";
       section.addEventListener("click", () => lb && lb.open(mediaIndex));
     }
@@ -1038,26 +976,6 @@ function renderProject() {
   info.append(infoLeft, infoRight);
   container.append(list, info);
   c.append(container);
-
-  /* scrub de secuencias de fotogramas: se recalcula en cada scroll/resize,
-     pero como mucho una vez por frame de pantalla (rAF). Sin el throttle,
-     un scroll rápido dispara el evento "scroll" muchas más veces de las
-     que la pantalla puede pintar, y el <img> va cambiando de fotograma
-     más rápido de lo que se ve — eso es el parpadeo/flash. Al no haber
-     scroll, no avanza; hacia arriba retrocede. */
-  if (frameScrubbers.length) {
-    let raf = 0;
-    const run = () => { raf = 0; for (const fn of frameScrubbers) fn(); };
-    const kick = () => { if (!raf) raf = requestAnimationFrame(run); };
-    addEventListener("scroll", kick, { passive: true });
-    addEventListener("resize", kick, { passive: true });
-    kick();
-    onCleanup(() => {
-      removeEventListener("scroll", kick);
-      removeEventListener("resize", kick);
-      if (raf) cancelAnimationFrame(raf);
-    });
-  }
 
   initVideos(container);
   initReveal();

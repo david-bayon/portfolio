@@ -168,9 +168,7 @@ abre siempre el original. Al añadir o cambiar imágenes, genera sus copias:
 python3 scripts/web-images.py
 ```
 
-Una imagen sin copia se ve igual con su original, solo que pesa más. Los fotogramas de
-D&AD no llevan copia: se publican a 1920 px en WebP sin pérdida, y los originales de
-3840 px están en `media-src/dandad-new-blood/fotogramas-originales/`.
+Una imagen sin copia se ve igual con su original, solo que pesa más.
 
 **Tarjetas:** si un SVG lleva imágenes incrustadas, guarda el original en
 `media-src/<proyecto>/tarjeta-original/` y aligéralo:
