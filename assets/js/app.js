@@ -4,6 +4,7 @@
 import { PROJECTS, ABOUT, SITE, img } from "./data.js";
 import { CASE_STUDIES } from "./case-studies.js";
 import { ARCHIVE } from "./archive.js";
+import { avifReady, web } from "./web-images.js";
 import { LANGS, lang, locale, setLang, t, ui } from "./i18n.js";
 
 /* ---------- helpers ---------- */
@@ -443,11 +444,11 @@ function videoNode({ src, ratio, autoplay = true, button = false, loop = true, p
 }
 
 function frameLoopNode({ frames, ratio, intervalMs = 500 }) {
-  const image = el("img", { src: img(frames[0], 748), alt: "", loading: "lazy", decoding: "async", class: "preload", style: `aspect-ratio:${ratio || "3 / 2"}` });
+  const image = el("img", { src: web(frames[0]), alt: "", loading: "lazy", decoding: "async", class: "preload", style: `aspect-ratio:${ratio || "3 / 2"}` });
   let i = 0;
   const t = setInterval(() => {
     i = (i + 1) % frames.length;
-    image.src = img(frames[i], 748);
+    image.src = web(frames[i]);
   }, intervalMs);
   onCleanup(() => clearInterval(t));
   return image;
@@ -679,7 +680,7 @@ function renderAll() {
       lightboxItems.push({ type: "video", src: a.src });
     } else {
       lightboxItems.push(a.images ? { type: "group", images: a.images, sizes: a.sizes } : { type: "image", src: a.src });
-      media = el("img", { src: a.src, alt: title, loading: "lazy", decoding: "async", class: "preload" });
+      media = el("img", { src: web(a.src), alt: title, loading: "lazy", decoding: "async", class: "preload" });
     }
     const activate = () => lightbox?.open(start);
     return el("div", {
@@ -878,7 +879,7 @@ function renderProject() {
   /* mini-card (visible sólo en móvil) */
   list.append(el("div", { class: "nav__card" },
     el("div", { class: "nav__card__inner" },
-      el("div", { class: "nav__card__img" }, el("img", { src: img(project.thumb, 144), alt: title })),
+      el("div", { class: "nav__card__img" }, el("img", { src: web(project.thumb), alt: title })),
       el("div", { class: "nav__card__info" }, el("h2", { text: title }), el("p", { text: desc })))));
 
   const slices = el("div", { class: "case__study__slices" });
@@ -968,7 +969,7 @@ function renderProject() {
       section.append(frameLoopNode({ frames: s.media.frames, ratio: s.ratio, intervalMs: s.media.intervalMs }));
       galleryItems.push({ type: "image", src: s.media.frames[0] });
     } else {
-      section.append(el("img", { src: img(s.media.src, 748), alt: "", loading: "lazy", decoding: "async", class: "preload", ...(s.position ? { style: `object-position:${s.position}` } : {}) }));
+      section.append(el("img", { src: web(s.media.src), alt: "", loading: "lazy", decoding: "async", class: "preload", ...(s.position ? { style: `object-position:${s.position}` } : {}) }));
       galleryItems.push({ type: "image", src: s.media.src });
     }
     if (!s.button && s.media.type !== "frames" && s.media.type !== "iframe") {
@@ -1358,5 +1359,7 @@ function wirePreload(scope = document) {
   });
 }
 
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-else boot();
+avifReady.then(() => {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+});

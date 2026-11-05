@@ -35,6 +35,7 @@
      y sin recortar (con su propia proporción). En pantallas más pequeñas
      todas ocupan una columna.
    ============================================================ */
+import { webPaths } from "./web-images.js";
 export const ARCHIVE_TEXT = {
   "beatriz-hoteles-restaurant-menus": { title: "Beatriz Hoteles", desc: { en: "Menu layout and design for the hotel restaurants", es: "Maquetación y diseño de cartas para los restaurantes del hotel" } },
   "four-design-studio-identity": { title: "FOUR", desc: { en: "Identity for a design studio", es: "Identidad para un estudio de diseño" } },
@@ -134,6 +135,7 @@ const keyOf = new Map(); // tarjeta → nombre del archivo o carpeta, para ARCHI
 Object.entries(files)
   .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
   .forEach(([path, src]) => {
+    webPaths.set(src, path.replace("../", ""));
     const rel = path.replace("../archive/", "").split("/");
     const file = rel.pop();
     const folder = rel.join("/");

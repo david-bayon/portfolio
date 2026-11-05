@@ -54,6 +54,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    // las copias AVIF más pequeñas no van dentro del JS: engordarían cada carga
+    assetsInlineLimit: (file) => (file.includes("/assets/web/") ? false : undefined),
     rollupOptions: {
       input: {
         index: resolve(__dirname, "index.html"),
