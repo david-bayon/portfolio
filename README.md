@@ -48,12 +48,15 @@ assets/
     i18n.js          Idioma EN/ES: textos fijos de la interfaz + botón de banderas.
                      En los datos, un texto traducido es { en: "...", es: "..." }
     app.js           Lógica de UI (nav, reloj, tema, reveal, vídeos, lightbox, render)
+    web-images.js    Elige la copia AVIF de cada imagen, si el navegador la admite
   archive/           Piezas sueltas de /all; una subcarpeta = una tarjeta
   cards/<proyecto>/  Diseño de la tarjeta de cada proyecto en el menú lateral
+  web/               Copias AVIF de las imágenes (las genera scripts/web-images.py)
 public/              Se copia tal cual a la raíz de la web
   about/             Vídeo y póster de About
   work/<proyecto>/   Imágenes y vídeos de cada caso de estudio
 media-src/           Originales locales: ni se suben a git ni se publican
+scripts/             web-images.py: genera las copias de assets/web/; web-cards.py: aligera las tarjetas
 vite.config.js       Config de Vite (4 páginas de entrada)
 ```
 
@@ -158,8 +161,34 @@ Suelta el archivo en `assets/archive/` y añade su texto y su posición en
 marca y lo que se ve: `vino-claro-bottle-mockup-red-wine-front.jpg`. Las miniaturas de
 la ficha en móvil acaban en `-icon`, y los fotogramas de secuencias van en `frames/`.
 
-Los medios se sirven a calidad original: no se recomprimen ni se reescalan. Solo se
-permiten optimizaciones sin pérdida (mismo resultado píxel a píxel).
+**Imágenes:** la página muestra una copia AVIF de 2060 px de ancho como mucho y el visor
+abre siempre el original. Al añadir o cambiar imágenes, genera sus copias:
+
+```bash
+python3 scripts/web-images.py
+```
+
+Una imagen sin copia se ve igual con su original, solo que pesa más. Los fotogramas de
+D&AD no llevan copia: se publican a 1920 px en WebP sin pérdida, y los originales de
+3840 px están en `media-src/dandad-new-blood/fotogramas-originales/`.
+
+**Tarjetas:** si un SVG lleva imágenes incrustadas, guarda el original en
+`media-src/<proyecto>/tarjeta-original/` y aligéralo:
+
+```bash
+python3 scripts/web-cards.py assets/cards/<card>/<card>-card.svg
+```
+
+**Vídeos:** se publican reducidos, en H.264, con el original guardado en
+`media-src/<proyecto>/videos-originales/`. Para animaciones y piezas gráficas:
+
+```bash
+ffmpeg -i original.mp4 -map 0:v:0 -map '0:a?' -vf "scale='if(gte(iw,ih),min(2560,iw),-2)':'if(gte(iw,ih),-2,min(2560,ih))':flags=lanczos" -c:v libx264 -preset slow -crf 17 -profile:v high -pix_fmt yuv420p -c:a copy -movflags +faststart nuevo.mp4
+```
+
+En películas de rodaje largas se usa `-crf 21`, y en la de surf, a dos pasadas,
+`-preset slower -b:v 8M -maxrate 12M -bufsize 24M`. Si el resultado no baja al menos un
+15 %, se publica el original.
 
 ---
 
