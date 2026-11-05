@@ -73,7 +73,7 @@ export const CASE_STUDIES = {
           },
         },
       ] },
-      { t: "media", ratio: "16 / 9", media: { type: "frames", dir: "work/dandad-new-blood/frames/", pad: 4, ext: ".png", first: 0, last: 289, step: 1, anchor: 279, anchorAt: 0.5, pxPerFrame: 2.65 } },
+      { t: "media", ratio: "16 / 9", media: { type: "frames", dir: "work/dandad-new-blood/frames/", pad: 4, ext: ".webp", first: 0, last: 289, step: 1, anchor: 279, anchorAt: 0.5, pxPerFrame: 2.65 } },
       { t: "media", ratio: "3 / 2", media: { type: "image", src: "work/dandad-new-blood/monotype-penguin-ai-poster-bike-mockup.png" } },
       { t: "media", ratio: "3 / 4", layout: "split", media: { type: "image", src: "work/dandad-new-blood/monotype-penguin-ai-poster-blue-left.png" } },
       { t: "media", ratio: "3 / 4", layout: "split", media: { type: "image", src: "work/dandad-new-blood/monotype-penguin-ai-poster-lettering-right.png" } },
